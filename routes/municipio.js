@@ -1,146 +1,135 @@
 var express = require('express');
 var app = express();
-var bcrypt = require('bcryptjs');
-var jwt = require('jsonwebtoken');
-
 var mdAutenticacion = require('../middlewares/autenticacion');
+var Municipio = require('../models/municipio');
 
-var Usuario = require('../models/usuario');
 // =======================================================
-// obtener todos los usuarios
+// obtener todos los municipios
 // =======================================================
 app.get('/', (req, res, next) => {
     var desde = req.query.desde || 0;
     desde = Number(desde);
-    Usuario.find({}, 'nombre email img role')
+    Municipio.find({})
         .skip(desde)
         .limit(5)
+        .populate('usuario', 'nombre email')
         .exec(
-            (err, usuarios) => {
+            (err, municipios) => {
                 if (err) {
                     return res.status(500).json({
                         ok: false,
-                        mensaje: 'Error cargando usuarios',
+                        mensaje: 'Error cargando municipios',
                         errors: err
                     });
                 }
-                Usuario.count({}, (err, conteo) => {
+                Municipio.count({}, (err, conteo) => {
                     if (err) {
                         return res.status(500).json({
                             ok: false,
-                            mensaje: 'Error en el conteo de usuarios',
+                            mensaje: 'Error en el conteo de municipios',
                             errors: err
                         });
                     }
                     res.status(200).json({
                         ok: true,
-                        usuarios: usuarios,
+                        municipios: municipios,
                         total: conteo
                     });
                 });
-
             });
 });
 
 // =======================================================
-// Actualizar usuario
+// Actualizar municipio
 // =======================================================
 app.put('/:id', mdAutenticacion.verificaToken, (req, res) => {
     var id = req.params.id;
-    Usuario.findById(id, (err, usuario) => {
+    Municipio.findById(id, (err, municipio) => {
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al buscar usuario',
+                mensaje: 'Error al buscar municipio',
                 errors: err
             });
         }
-        if (!usuario) {
+        if (!municipio) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'El usaurio con el id ' + id + ' no existe.',
-                errors: { messaje: 'No existe un usuario con ese ID.' }
+                mensaje: 'El municipio con el id ' + id + ' no existe.',
+                errors: { messaje: 'No existe un municipio con ese ID.' }
             });
         }
         var body = req.body;
-        usuario.nombre = body.nombre;
-        usuario.email = body.email;
-        usuario.role = body.role;
+        municipio.nombre = body.nombre;
 
-        usuario.save((err, usuarioGuardado) => {
+        municipio.save((err, municipioGuardado) => {
 
             if (err) {
                 return res.status(400).json({
                     ok: false,
-                    mensaje: 'Error al actualizar el usuario',
+                    mensaje: 'Error al actualizar el municipio',
                     errors: err
                 });
             }
-            usuarioGuardado.password = ':)';
             res.status(200).json({
                 ok: true,
-                usuario: usuarioGuardado
+                municipio: municipioGuardado
             });
         });
 
     });
-
 });
 
 // =======================================================
-// Crear un nuevo usuario
+// Crear un nuevo municipio
 // =======================================================
 app.post('/', mdAutenticacion.verificaToken, (req, res) => {
     var body = req.body;
-    var usuario = new Usuario({
+    var municipio = new Municipio({
         nombre: body.nombre,
-        email: body.email,
-        password: bcrypt.hashSync(body.password, 10),
-        img: body.img,
-        role: body.role
+        usuario: req.usuario._id,
+        img: body.img
     });
-    usuario.save((err, usuarioGuardado) => {
+    municipio.save((err, municipioGuardado) => {
         if (err) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'Error al crear usuario',
+                mensaje: 'Error al crear municipio',
                 errors: err
             });
         }
         res.status(201).json({
             ok: true,
-            usuario: usuarioGuardado,
+            municipio: municipioGuardado,
             usuariotoken: req.usuario
         });
     });
-
-
 });
 
 // =======================================================
-// Borrar un usuario usuario por el id
+// Borrar un municipio por el id
 // =======================================================
 app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
     var id = req.params.id;
 
-    Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+    Municipio.findByIdAndRemove(id, (err, municipioBorrado) => {
         if (err) {
             return res.status(500).json({
                 ok: false,
-                mensaje: 'Error al borrar usuario',
+                mensaje: 'Error al borrar municipio',
                 errors: err
             });
         }
-        if (!usuarioBorrado) {
+        if (!municipioBorrado) {
             return res.status(400).json({
                 ok: false,
-                mensaje: 'No existe un usuario con ese ID',
-                errors: { messaje: 'No existe un usuario con ese ID' }
+                mensaje: 'No existe un municipio con ese ID',
+                errors: { messaje: 'No existe un municipio con ese ID' }
             });
         }
         res.status(200).json({
             ok: true,
-            usuario: usuarioBorrado
+            municipio: municipioBorrado
         });
     });
 
