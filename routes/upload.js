@@ -36,7 +36,7 @@ app.put('/:tipo/:id', (req, res, next) => {
 
     // solo estas extensiones aceptamos
     var extensionesValidas = ['png', 'gif', 'jpg', 'jpeg'];
-    if (extensionesValidas.indexOf(extensionArchivo) < 0) {
+    if (extensionesValidas.indexOf(extensionArchivo.toLowerCase()) < 0) {
         return res.status(400).json({
             ok: false,
             mensaje: 'Extensión no valida',
